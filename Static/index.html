@@ -509,11 +509,13 @@ async function fetchViewportTile() {
   const rw=Math.min(S.meta.width,p2.sx)-rx,rh=Math.min(S.meta.height,p2.sy)-ry;
   if(rw<=0||rh<=0) return;
   const coverage=(rw*rh)/(S.meta.width*S.meta.height);
-  if(coverage>=0.98){tileCtx.clearRect(0,0,tileC.width,tileC.height);S.lastTileRegion=null;return;}
+  if(coverage>=0.5){tileCtx.clearRect(0,0,tileC.width,tileC.height);S.lastTileRegion=null;return;}
+  // Also skip if the raw pixel count is enormous regardless of coverage
+  if(rw*rh > 500_000_000){tileCtx.clearRect(0,0,tileC.width,tileC.height);S.lastTileRegion=null;return;}
   const key=`${rx},${ry},${rw},${rh}`;
   if(key===S.lastTileKey) return;
   S.lastTileKey=key;
-  const MAX=4096; let fw=rw,fh=rh;
+  const MAX=2048; let fw=rw,fh=rh;
   if(fw>MAX||fh>MAX){const a=fw/fh;if(a>=1){fw=MAX;fh=Math.round(MAX/a);}else{fh=MAX;fw=Math.round(MAX*a);}}
   try {
     const url=`${API}/region?x=${rx}&y=${ry}&w=${rw}&h=${rh}&level=0&q=90&t=${Date.now()}`;
