@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.0-blue.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)]()
 
-A free standalone tool for scanning staff and pathology labs to crop a Whole Slide Image (WSI) and export the selected region as a pyramidal TIFF for pathologist review.
+A free standalone tool for scanning staff and pathology labs to crop a Whole Slide Image (WSI) and export the selected region as a pyramidal TIFF for pathologist/researcher review.
 
 **Built by Scott Kilcoyne** — [LinkedIn](https://www.linkedin.com/in/scott-kilcoyne-pathology/)
 
