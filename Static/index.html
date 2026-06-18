@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSI Clipper v1.0</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a;
+  --border:#2e3350; --accent:#4f8ef7; --accent2:#7c5cbf;
+  --success:#3ecf8e; --warn:#f5a623; --danger:#e05c5c;
+  --text:#e8eaf6; --muted:#8b90b0;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+body { font-family:var(--font); background:var(--bg); color:var(--text);
+       height:100vh; display:flex; flex-direction:column; overflow:hidden; user-select:none; }
+
+header { display:flex; align-items:center; gap:12px; padding:10px 18px;
+         background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.logo { width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px; }
+header h1 { font-size:15px;font-weight:600; }
+header .sub { font-size:11px;color:var(--muted); }
+.badge { margin-left:auto;background:var(--accent2);color:#fff;font-size:10px;
+         padding:2px 8px;border-radius:20px; }
+.caps-badge { font-size:10px;background:var(--surface2);border:1px solid var(--border);
+              padding:2px 8px;border-radius:20px;color:var(--muted);margin-left:8px; }
+.cap-ok{color:var(--success)} .cap-miss{color:var(--danger)}
+
+.app { display:flex; flex:1; overflow:hidden; }
+
+/* ── Sidebar ── */
+aside { width:270px;background:var(--surface);border-right:1px solid var(--border);
+        display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0; }
+.section { padding:12px 14px;border-bottom:1px solid var(--border); }
+.section-title { font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--muted);
+                 text-transform:uppercase;margin-bottom:8px; }
+
+.drop-zone { border:2px dashed var(--border);border-radius:10px;padding:16px 12px;
+             text-align:center;cursor:pointer;transition:all .2s;position:relative; }
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(79,142,247,.07)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop-zone .icon{font-size:24px;margin-bottom:4px}
+.drop-zone p{font-size:11px;color:var(--muted);line-height:1.5}
+.drop-zone p strong{color:var(--text)}
+
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px;margin-top:8px}
+label:first-child{margin-top:0}
+input[type=number],select,input[type=text],textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:var(--font)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:48px;line-height:1.4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+
+.info-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+          padding:9px;font-size:11px;line-height:1.9}
+.info-box .val{color:var(--accent);font-weight:600;float:right}
+.info-box .empty{color:var(--muted);font-style:italic;text-align:center;padding:4px 0;font-size:11px}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+     padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+     border:none;transition:all .15s;margin-top:6px}
+.btn-success{background:var(--success);color:#0a2e20}
+.btn-success:hover{background:#2db87a}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* Progress */
+.progress-wrap{margin-top:8px;display:none}
+.progress-wrap.show{display:block}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;position:relative}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--success));
+               transition:width .3s;border-radius:3px}
+.progress-label{font-size:10px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between}
+
+/* Checkbox */
+.check-row{display:flex;align-items:center;gap:7px;margin-top:7px}
+.check-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+.check-row label{margin:0;cursor:pointer;font-size:11px;color:var(--muted)}
+
+/* Log table */
+.log-table{width:100%;border-collapse:collapse;font-size:10px;margin-top:6px}
+.log-table th{color:var(--muted);font-weight:600;text-align:left;padding:3px 4px;
+              border-bottom:1px solid var(--border)}
+.log-table td{padding:3px 4px;border-bottom:1px solid rgba(46,51,80,.5);color:var(--text);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
+.log-empty{color:var(--muted);font-style:italic;font-size:11px;text-align:center;padding:8px 0}
+
+/* ── Viewer ── */
+.viewer-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:6px;padding:6px 10px;
+         background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.tool-btn{padding:5px 9px;border-radius:6px;font-size:11px;font-weight:600;
+          cursor:pointer;border:1px solid var(--border);background:var(--surface2);
+          color:var(--text);transition:all .15s;white-space:nowrap}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tool-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.zoom-info{font-size:11px;color:var(--muted);margin-left:auto}
+
+#viewer{flex:1;position:relative;overflow:hidden;background:#111}
+#viewer canvas{position:absolute;top:0;left:0}
+#tileCanvas{pointer-events:none}
+#selCanvas{pointer-events:none}
+#minimapCanvas{position:absolute;bottom:12px;right:12px;border:1px solid var(--border);
+               border-radius:4px;opacity:.85;pointer-events:none;z-index:5}
+
+.empty-state{position:absolute;inset:0;display:flex;flex-direction:column;
+             align-items:center;justify-content:center;color:var(--muted);gap:12px;pointer-events:none}
+.empty-state .big-icon{font-size:56px;opacity:.3}
+
+.status-bar{display:flex;align-items:center;gap:14px;padding:4px 12px;
+            background:var(--surface);border-top:1px solid var(--border);
+            font-size:10px;color:var(--muted);flex-shrink:0}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:4px;display:inline-block}
+.dot.green{background:var(--success)}
+
+#toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);
+       border:1px solid var(--border);border-radius:10px;padding:10px 14px;
+       font-size:12px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.5);
+       transform:translateY(80px);opacity:0;transition:all .3s;z-index:999}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-color:var(--success);color:var(--success)}
+#toast.error{border-color:var(--danger);color:var(--danger)}
+
+#loading-overlay{position:absolute;inset:0;background:rgba(15,17,23,.8);
+                 display:none;align-items:center;justify-content:center;
+                 flex-direction:column;gap:14px;z-index:20}
+#loading-overlay.show{display:flex}
+#loading-overlay p{font-size:13px;color:var(--muted)}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);
+         border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#viewer.crop-mode{cursor:crosshair}
+#viewer.pan-mode{cursor:grab}
+#viewer.pan-mode.panning{cursor:grabbing}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🔬</div>
+  <div>
+    <h1>WSI Clipper</h1>
+    <span class="sub">Whole Slide Image — Region of Interest Exporter</span>
+  </div>
+  <span id="capBadge" class="caps-badge">checking…</span>
+  <span class="badge">v1.0</span>
+</header>
+
+<div class="app">
+<aside>
+
+  <!-- Load -->
+  <div class="section">
+    <div class="section-title">Load Image</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".tif,.tiff,.svs,.ndpi,.scn,.mrxs,.bif,.qptiff,.png,.jpg,.jpeg">
+      <div class="icon">🗂️</div>
+      <p><strong>Drop WSI here</strong><br>or click to browse<br>
+         <span style="font-size:10px">SVS · TIFF · NDPI · SCN · PNG</span></p>
+    </div>
+  </div>
+
+  <!-- Crop info -->
+  <div class="section">
+    <div class="section-title">Crop Region</div>
+    <div class="info-box" id="cropInfo">
+      <div class="empty">No region selected.<br>Draw a rectangle on the image.</div>
+    </div>
+    <button class="btn btn-ghost" id="clearBtn" disabled onclick="clearSelection()">✕ Clear Selection</button>
+  </div>
+
+  <!-- Annotation -->
+  <div class="section">
+    <div class="section-title">Annotation</div>
+    <label>Notes (embedded in export)</label>
+    <textarea id="notes" placeholder="e.g. Best glomerular section, punch 3 of 5"></textarea>
+    <label>Operator</label>
+    <input type="text" id="operator" placeholder="Your name or initials">
+  </div>
+
+  <!-- Export settings -->
+  <div class="section">
+    <div class="section-title">Export Settings</div>
+
+    <label>Export Format</label>
+    <select id="exportFormat" onchange="updateFormatUI()">
+      <option value="pyramid">Pyramidal TIFF (QuPath / OMERO)</option>
+      <option value="flat">Flat TIFF (Windows Photo Viewer)</option>
+      <option value="jpeg">JPEG (universal, small file)</option>
+    </select>
+
+    <div id="pyramidOpts">
+      <label>Pyramid Levels</label>
+      <select id="pyramidLevels">
+        <option value="4" selected>4 levels (recommended)</option>
+        <option value="3">3 levels</option>
+        <option value="5">5 levels</option>
+      </select>
+      <label>Tile Size (px)</label>
+      <select id="tileSize">
+        <option value="256" selected>256 × 256 (faster in QuPath)</option>
+        <option value="512">512 × 512</option>
+        <option value="1024">1024 × 1024</option>
+      </select>
+      <label>Compression</label>
+      <select id="compression">
+        <option value="jpeg" selected>JPEG (fast, recommended)</option>
+        <option value="lzw">LZW (lossless)</option>
+        <option value="deflate">Deflate (lossless)</option>
+        <option value="none">None (uncompressed)</option>
+      </select>
+    </div>
+
+    <div class="row2">
+      <div><label>JPEG Quality</label>
+           <input type="number" id="jpegQuality" value="90" min="1" max="100"></div>
+      <div><label>MPP (µm/px)</label>
+           <input type="number" id="mppOverride" value="" step="0.01" min="0.01" placeholder="auto"></div>
+    </div>
+
+    <label>Output Filename</label>
+    <input type="text" id="filename" value="roi_export">
+
+    <div class="check-row">
+      <input type="checkbox" id="scaleBar">
+      <label for="scaleBar">Burn scale bar into export</label>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label">
+        <span id="progressLabel">Exporting…</span>
+        <span id="progressPct">0%</span>
+      </div>
+    </div>
+
+    <button class="btn btn-success" id="exportBtn" disabled onclick="exportROI()">⬇ Export Image</button>
+    <button class="btn btn-ghost"   id="exportPngBtn" disabled onclick="exportPreview()">⬇ Download JPEG Preview</button>
+  </div>
+
+  <!-- Slide metadata -->
+  <div class="section">
+    <div class="section-title">Slide Metadata</div>
+    <div class="info-box" id="metaInfo"><div class="empty">Load an image to see metadata.</div></div>
+  </div>
+
+  <!-- Export log -->
+  <div class="section" style="flex:1">
+    <div class="section-title">Export Log <span style="float:right;cursor:pointer;color:var(--muted)" onclick="loadLog()" title="Refresh">↺</span></div>
+    <div id="logContainer"><div class="log-empty">No exports yet this session.</div></div>
+  </div>
+
+</aside>
+
+<div class="viewer-wrap">
+  <div class="toolbar">
+    <button class="tool-btn active" id="toolCrop" onclick="setTool('crop')">✂ Crop</button>
+    <button class="tool-btn"        id="toolPan"  onclick="setTool('pan')">✋ Pan</button>
+    <div class="sep"></div>
+    <button class="tool-btn" onclick="zoomBy(1.5)">＋</button>
+    <button class="tool-btn" onclick="zoomBy(1/1.5)">－</button>
+    <button class="tool-btn" onclick="fitToView()">⊡ Fit</button>
+    <button class="tool-btn" onclick="zoom1x()">1:1</button>
+    <div class="sep"></div>
+    <button class="tool-btn" id="btnBright" onclick="toggleBrightness()">☀ Adjust</button>
+    <div class="sep"></div>
+    <span id="scaleBarLabel" style="font-size:11px;color:var(--muted);display:none"></span>
+    <span class="zoom-info" id="zoomInfo">No image loaded</span>
+  </div>
+
+  <!-- Brightness panel -->
+  <div id="brightPanel" style="display:none;padding:6px 12px;background:var(--surface);
+       border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-shrink:0">
+    <span style="font-size:11px;color:var(--muted)">Brightness</span>
+    <input type="range" id="brightness" min="50" max="200" value="100" style="width:100px"
+           oninput="applyFilters()">
+    <span style="font-size:11px;color:var(--muted)">Contrast</span>
+    <input type="range" id="contrast" min="50" max="200" value="100" style="width:100px"
+           oninput="applyFilters()">
+    <button class="tool-btn" onclick="resetFilters()" style="margin-left:4px">Reset</button>
+  </div>
+
+  <div id="viewer" class="crop-mode">
+    <canvas id="baseCanvas"></canvas>
+    <canvas id="tileCanvas"></canvas>
+    <canvas id="selCanvas"></canvas>
+    <canvas id="minimapCanvas" width="160" height="100"></canvas>
+
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">🔬</div>
+      <p>Load a Whole Slide Image to begin</p>
+    </div>
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <p id="loadingMsg">Loading…</p>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span><span class="dot" id="statusDot"></span><span id="statusText">No image loaded</span></span>
+    <span id="coordInfo">—</span>
+    <span id="selSize">—</span>
+    <span id="scaleInfo">—</span>
+  </div>
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+const API = 'http://localhost:5050/api';
+
+// ── Canvases ──────────────────────────────────────────────────────────────────
+const viewer   = document.getElementById('viewer');
+const baseC    = document.getElementById('baseCanvas');
+const tileC    = document.getElementById('tileCanvas');
+const selC     = document.getElementById('selCanvas');
+const mmC      = document.getElementById('minimapCanvas');
+const baseCtx  = baseC.getContext('2d');
+const tileCtx  = tileC.getContext('2d');
+const selCtx   = selC.getContext('2d');
+const mmCtx    = mmC.getContext('2d');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const S = {
+  meta:null, thumbImg:null,
+  scale:1, offX:0, offY:0, thumbScale:1,
+  tool:'crop',
+  dragging:false, dragStart:null, panStart:null,
+  sel:null, selDraft:null,
+  tileTimer:null, lastTileKey:'', lastTileRegion:null,
+  brightness:100, contrast:100,
+};
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+function resizeCanvases() {
+  const w=viewer.clientWidth, h=viewer.clientHeight;
+  [baseC,tileC,selC].forEach(c=>{c.width=w;c.height=h;});
+  renderBase(); renderSel(); renderMinimap();
+}
+new ResizeObserver(resizeCanvases).observe(viewer);
+
+// ── Capabilities ──────────────────────────────────────────────────────────────
+async function checkCaps() {
+  try {
+    const r = await fetch(API+'/capabilities');
+    const c = await r.json();
+    const drivers = [c.openslide&&'OpenSlide',c.pyvips&&'pyvips',c.tifffile&&'tifffile'].filter(Boolean);
+    document.getElementById('capBadge').innerHTML =
+      drivers.length ? `<span class="cap-ok">✓</span> ${drivers.join(' · ')}`
+                     : `<span class="cap-miss">⚠ PIL only</span>`;
+  } catch { document.getElementById('capBadge').innerHTML='<span class="cap-miss">⚠ Backend offline</span>'; }
+}
+checkCaps();
+
+// ── File upload ───────────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change',e=>{if(e.target.files[0])uploadFile(e.target.files[0]);});
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])uploadFile(e.dataTransfer.files[0]);});
+
+async function uploadFile(file) {
+  showOverlay(`Uploading ${file.name} (${(file.size/1048576).toFixed(0)} MB)…`);
+  const fd=new FormData(); fd.append('file',file);
+  try {
+    const r=await fetch(API+'/open',{method:'POST',body:fd});
+    const j=await r.json();
+    if(!r.ok||j.error) throw new Error(j.error||'Open failed');
+    S.meta=j.meta;
+    document.getElementById('mppOverride').placeholder=(j.meta.mpp_x||0.25).toFixed(4);
+    document.getElementById('filename').value=file.name.replace(/\.[^.]+$/,'')+'_roi';
+    updateMetaPanel(j.meta);
+    document.getElementById('emptyState').style.display='none';
+    document.getElementById('statusDot').className='dot green';
+    document.getElementById('statusText').textContent=`${file.name}  (${j.meta.width.toLocaleString()} × ${j.meta.height.toLocaleString()} px)`;
+    clearSelection();
+    await loadThumbnail();
+    updateScaleInfo();
+    showToast('✓ Loaded: '+file.name,'success');
+  } catch(e){showToast('Error: '+e.message,'error');}
+  finally{hideOverlay();}
+}
+
+async function loadThumbnail() {
+  showOverlay('Generating thumbnail…');
+  try {
+    const img=new Image();
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=API+'/thumbnail?t='+Date.now();});
+    S.thumbImg=img;
+    S.thumbScale=S.meta.width/img.naturalWidth;
+    fitToView();
+  } finally{hideOverlay();}
+}
+
+// ── Viewport ──────────────────────────────────────────────────────────────────
+function fitToView() {
+  if(!S.thumbImg) return;
+  const pad=40;
+  S.scale=Math.min((baseC.width-pad*2)/S.thumbImg.naturalWidth,(baseC.height-pad*2)/S.thumbImg.naturalHeight,1);
+  S.offX=(baseC.width-S.thumbImg.naturalWidth*S.scale)/2;
+  S.offY=(baseC.height-S.thumbImg.naturalHeight*S.scale)/2;
+  updateZoomLabel(); renderBase(); renderSel(); renderMinimap(); scheduleTileFetch();
+}
+function zoom1x() {
+  if(!S.thumbImg) return;
+  S.scale=1/S.thumbScale;
+  S.offX=(baseC.width-S.thumbImg.naturalWidth*S.scale)/2;
+  S.offY=(baseC.height-S.thumbImg.naturalHeight*S.scale)/2;
+  updateZoomLabel(); renderBase(); renderSel(); renderMinimap(); scheduleTileFetch();
+}
+function zoomBy(f,cx,cy) {
+  if(!S.thumbImg) return;
+  cx=cx??baseC.width/2; cy=cy??baseC.height/2;
+  S.offX=cx-(cx-S.offX)*f; S.offY=cy-(cy-S.offY)*f;
+  S.scale=Math.max(0.005,Math.min(40,S.scale*f));
+  updateZoomLabel(); renderBase(); renderSel(); renderMinimap(); scheduleTileFetch();
+}
+function updateZoomLabel() {
+  if(!S.meta) return;
+  document.getElementById('zoomInfo').textContent=
+    `Zoom: ${(S.scale*S.thumbScale*100).toFixed(0)}%  |  ${S.meta.width.toLocaleString()} × ${S.meta.height.toLocaleString()} px`;
+}
+viewer.addEventListener('wheel',e=>{
+  e.preventDefault(); if(!S.thumbImg) return;
+  const rect=viewer.getBoundingClientRect();
+  zoomBy(e.deltaY<0?1.15:1/1.15,e.clientX-rect.left,e.clientY-rect.top);
+},{passive:false});
+
+// ── Coordinate helpers ────────────────────────────────────────────────────────
+function screenToSlide(cx,cy){
+  const tx=(cx-S.offX)/S.scale, ty=(cy-S.offY)/S.scale;
+  return{sx:Math.round(tx*S.thumbScale),sy:Math.round(ty*S.thumbScale)};
+}
+function slideToScreen(sx,sy){
+  return{cx:S.offX+(sx/S.thumbScale)*S.scale,cy:S.offY+(sy/S.thumbScale)*S.scale};
+}
+
+// ── Render base ───────────────────────────────────────────────────────────────
+function renderBase() {
+  baseCtx.clearRect(0,0,baseC.width,baseC.height);
+  if(!S.thumbImg) return;
+  baseCtx.filter=`brightness(${S.brightness}%) contrast(${S.contrast}%)`;
+  baseCtx.drawImage(S.thumbImg,S.offX,S.offY,S.thumbImg.naturalWidth*S.scale,S.thumbImg.naturalHeight*S.scale);
+  baseCtx.filter='none';
+  repositionTile();
+}
+function repositionTile() {
+  if(!S.lastTileRegion) return;
+  const{rx,ry,rw,rh,img}=S.lastTileRegion;
+  const sc1=slideToScreen(rx,ry),sc2=slideToScreen(rx+rw,ry+rh);
+  tileCtx.clearRect(0,0,tileC.width,tileC.height);
+  tileCtx.filter=`brightness(${S.brightness}%) contrast(${S.contrast}%)`;
+  tileCtx.drawImage(img,sc1.cx,sc1.cy,sc2.cx-sc1.cx,sc2.cy-sc1.cy);
+  tileCtx.filter='none';
+}
+
+// ── Minimap ───────────────────────────────────────────────────────────────────
+function renderMinimap() {
+  if(!S.thumbImg||!S.meta) return;
+  const mw=mmC.width, mh=mmC.height;
+  mmCtx.clearRect(0,0,mw,mh);
+  mmCtx.fillStyle='rgba(15,17,23,0.7)';
+  mmCtx.fillRect(0,0,mw,mh);
+
+  // Draw thumbnail scaled to minimap
+  const ts=Math.min(mw/S.thumbImg.naturalWidth,mh/S.thumbImg.naturalHeight);
+  const tw=S.thumbImg.naturalWidth*ts, th=S.thumbImg.naturalHeight*ts;
+  const tx=(mw-tw)/2, ty=(mh-th)/2;
+  mmCtx.drawImage(S.thumbImg,tx,ty,tw,th);
+
+  // Draw viewport box
+  const p1=screenToSlide(0,0),p2=screenToSlide(baseC.width,baseC.height);
+  const vx=tx+(Math.max(0,p1.sx)/S.meta.width)*tw;
+  const vy=ty+(Math.max(0,p1.sy)/S.meta.height)*th;
+  const vw=((Math.min(S.meta.width,p2.sx)-Math.max(0,p1.sx))/S.meta.width)*tw;
+  const vh=((Math.min(S.meta.height,p2.sy)-Math.max(0,p1.sy))/S.meta.height)*th;
+  mmCtx.strokeStyle='rgba(79,142,247,0.9)';
+  mmCtx.lineWidth=1.5;
+  mmCtx.strokeRect(vx,vy,Math.max(2,vw),Math.max(2,vh));
+
+  // Draw selection if any
+  const sel=S.sel||S.selDraft;
+  if(sel) {
+    const sx=tx+(sel.x/S.meta.width)*tw;
+    const sy=ty+(sel.y/S.meta.height)*th;
+    const sw=(sel.w/S.meta.width)*tw;
+    const sh=(sel.h/S.meta.height)*th;
+    mmCtx.fillStyle='rgba(79,142,247,0.3)';
+    mmCtx.fillRect(sx,sy,sw,sh);
+    mmCtx.strokeStyle='#4f8ef7';
+    mmCtx.lineWidth=1;
+    mmCtx.strokeRect(sx,sy,sw,sh);
+  }
+}
+
+// ── Tile fetching ─────────────────────────────────────────────────────────────
+function scheduleTileFetch(){clearTimeout(S.tileTimer);S.tileTimer=setTimeout(fetchViewportTile,120);}
+
+async function fetchViewportTile() {
+  if(!S.meta) return;
+  const p1=screenToSlide(0,0),p2=screenToSlide(baseC.width,baseC.height);
+  const rx=Math.max(0,p1.sx),ry=Math.max(0,p1.sy);
+  const rw=Math.min(S.meta.width,p2.sx)-rx,rh=Math.min(S.meta.height,p2.sy)-ry;
+  if(rw<=0||rh<=0) return;
+  const coverage=(rw*rh)/(S.meta.width*S.meta.height);
+  if(coverage>=0.98){tileCtx.clearRect(0,0,tileC.width,tileC.height);S.lastTileRegion=null;return;}
+  const key=`${rx},${ry},${rw},${rh}`;
+  if(key===S.lastTileKey) return;
+  S.lastTileKey=key;
+  const MAX=4096; let fw=rw,fh=rh;
+  if(fw>MAX||fh>MAX){const a=fw/fh;if(a>=1){fw=MAX;fh=Math.round(MAX/a);}else{fh=MAX;fw=Math.round(MAX*a);}}
+  try {
+    const url=`${API}/region?x=${rx}&y=${ry}&w=${rw}&h=${rh}&level=0&q=90&t=${Date.now()}`;
+    const img=new Image();
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
+    const sc1=slideToScreen(rx,ry),sc2=slideToScreen(rx+rw,ry+rh);
+    const dw=sc2.cx-sc1.cx,dh=sc2.cy-sc1.cy;
+    if(dw<=0||dh<=0) return;
+    tileCtx.clearRect(0,0,tileC.width,tileC.height);
+    tileCtx.filter=`brightness(${S.brightness}%) contrast(${S.contrast}%)`;
+    tileCtx.drawImage(img,sc1.cx,sc1.cy,dw,dh);
+    tileCtx.filter='none';
+    S.lastTileRegion={rx,ry,rw,rh,img};
+  } catch(e){console.warn('Tile fetch:',e.message);}
+}
+
+// ── Selection overlay ─────────────────────────────────────────────────────────
+function renderSel() {
+  selCtx.clearRect(0,0,selC.width,selC.height);
+  const sel=S.selDraft||S.sel;
+  if(!sel||!S.thumbImg) return;
+  const sc1=slideToScreen(sel.x,sel.y),sc2=slideToScreen(sel.x+sel.w,sel.y+sel.h);
+  const sx=sc1.cx,sy=sc1.cy,sw=sc2.cx-sc1.cx,sh=sc2.cy-sc1.cy;
+  selCtx.fillStyle='rgba(0,0,0,0.45)';
+  selCtx.fillRect(0,0,selC.width,selC.height);
+  selCtx.clearRect(sx,sy,sw,sh);
+  selCtx.strokeStyle='#4f8ef7';selCtx.lineWidth=2;
+  selCtx.strokeRect(sx,sy,sw,sh);
+  const hs=8;selCtx.fillStyle='#4f8ef7';
+  [[sx,sy],[sx+sw,sy],[sx,sy+sh],[sx+sw,sy+sh]].forEach(([hx,hy])=>
+    selCtx.fillRect(hx-hs/2,hy-hs/2,hs,hs));
+  selCtx.fillStyle='rgba(79,142,247,.92)';
+  selCtx.fillRect(sx,sy-22,172,20);
+  selCtx.fillStyle='#fff';
+  selCtx.font='11px '+getComputedStyle(document.body).fontFamily;
+  selCtx.fillText(`${sel.w.toLocaleString()} × ${sel.h.toLocaleString()} px`,sx+6,sy-7);
+  renderMinimap();
+}
+
+// ── Scale bar info ────────────────────────────────────────────────────────────
+function updateScaleInfo() {
+  if(!S.meta) return;
+  const mpp=parseFloat(document.getElementById('mppOverride').value)||S.meta?.mpp_x||0.25;
+  // Calculate what 100µm looks like on screen right now
+  const px100um=100/mpp;
+  const screenPx=px100um/S.thumbScale*S.scale;
+  const el=document.getElementById('scaleInfo');
+  el.textContent=`100µm = ${screenPx.toFixed(1)} screen px`;
+}
+
+// ── Pointer events ────────────────────────────────────────────────────────────
+let _pd=false;
+viewer.addEventListener('pointerdown',e=>{
+  if(!S.thumbImg) return;
+  e.preventDefault();
+  viewer.setPointerCapture(e.pointerId);
+  _pd=true;
+  const cx=e.offsetX,cy=e.offsetY;
+  if(S.tool==='pan'){S.panStart={cx,cy,ox:S.offX,oy:S.offY};viewer.classList.add('panning');}
+  else{S.dragStart={cx,cy};S.selDraft=null;}
+});
+viewer.addEventListener('pointermove',e=>{
+  const cx=e.offsetX,cy=e.offsetY;
+  const{sx,sy}=screenToSlide(cx,cy);
+  if(S.meta) document.getElementById('coordInfo').textContent=`X: ${Math.max(0,sx).toLocaleString()}  Y: ${Math.max(0,sy).toLocaleString()}`;
+  if(!_pd) return;
+  if(S.tool==='pan'){
+    S.offX=S.panStart.ox+(cx-S.panStart.cx);
+    S.offY=S.panStart.oy+(cy-S.panStart.cy);
+    renderBase();renderSel();renderMinimap();scheduleTileFetch();
+  } else {
+    const ds=S.dragStart;
+    const p1=screenToSlide(Math.min(ds.cx,cx),Math.min(ds.cy,cy));
+    const p2=screenToSlide(Math.max(ds.cx,cx),Math.max(ds.cy,cy));
+    S.selDraft={
+      x:Math.max(0,p1.sx),y:Math.max(0,p1.sy),
+      w:Math.min(S.meta.width,p2.sx)-Math.max(0,p1.sx),
+      h:Math.min(S.meta.height,p2.sy)-Math.max(0,p1.sy),
+    };
+    renderSel();
+  }
+});
+viewer.addEventListener('pointerup',e=>{
+  if(!_pd) return; _pd=false;
+  viewer.classList.remove('panning');
+  if(S.tool==='crop'&&S.selDraft&&S.selDraft.w>20&&S.selDraft.h>20){
+    S.sel={...S.selDraft};S.selDraft=null;
+    updateCropPanel();
+    ['clearBtn','exportBtn','exportPngBtn'].forEach(id=>document.getElementById(id).disabled=false);
+  } else if(S.tool==='crop'){S.selDraft=null;renderSel();}
+  scheduleTileFetch();
+});
+viewer.addEventListener('pointercancel',()=>{_pd=false;S.selDraft=null;viewer.classList.remove('panning');renderSel();});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if(e.code==='Space'){e.preventDefault();setTool(S.tool==='pan'?'crop':'pan');}
+  if(e.code==='KeyC') setTool('crop');
+  if(e.code==='Equal'||e.code==='NumpadAdd') zoomBy(1.25);
+  if(e.code==='Minus'||e.code==='NumpadSubtract') zoomBy(0.8);
+  if(e.code==='KeyF') fitToView();
+  if(e.code==='Escape') clearSelection();
+});
+
+// ── Tool ──────────────────────────────────────────────────────────────────────
+function setTool(t){
+  S.tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool'+t[0].toUpperCase()+t.slice(1)).classList.add('active');
+  viewer.className=t==='pan'?'pan-mode':'crop-mode';
+}
+
+// ── Brightness / contrast ─────────────────────────────────────────────────────
+let brightOpen=false;
+function toggleBrightness(){
+  brightOpen=!brightOpen;
+  document.getElementById('brightPanel').style.display=brightOpen?'flex':'none';
+  document.getElementById('btnBright').classList.toggle('active',brightOpen);
+}
+function applyFilters(){
+  S.brightness=parseInt(document.getElementById('brightness').value);
+  S.contrast=parseInt(document.getElementById('contrast').value);
+  renderBase();
+}
+function resetFilters(){
+  document.getElementById('brightness').value=100;
+  document.getElementById('contrast').value=100;
+  S.brightness=100;S.contrast=100;
+  renderBase();
+}
+
+// ── Crop panel ────────────────────────────────────────────────────────────────
+function updateCropPanel(){
+  if(!S.sel) return;
+  const{x,y,w,h}=S.sel;
+  const mpp=parseFloat(document.getElementById('mppOverride').value)||S.meta?.mpp_x||0.25;
+  document.getElementById('cropInfo').innerHTML=`
+    <div>X origin<span class="val">${x.toLocaleString()} px</span></div>
+    <div>Y origin<span class="val">${y.toLocaleString()} px</span></div>
+    <div>Width<span class="val">${w.toLocaleString()} px</span></div>
+    <div>Height<span class="val">${h.toLocaleString()} px</span></div>
+    <div>Width (mm)<span class="val">${(w*mpp/1000).toFixed(2)}</span></div>
+    <div>Height (mm)<span class="val">${(h*mpp/1000).toFixed(2)}</span></div>
+    <div>Megapixels<span class="val">${(w*h/1e6).toFixed(1)} MP</span></div>`;
+  document.getElementById('selSize').textContent=`Selection: ${w.toLocaleString()} × ${h.toLocaleString()} px`;
+}
+function clearSelection(){
+  S.sel=null;S.selDraft=null;
+  document.getElementById('cropInfo').innerHTML='<div class="empty">No region selected.<br>Draw a rectangle on the image.</div>';
+  ['clearBtn','exportBtn','exportPngBtn'].forEach(id=>document.getElementById(id).disabled=true);
+  document.getElementById('selSize').textContent='—';
+  renderSel();
+}
+
+// ── Metadata panel ────────────────────────────────────────────────────────────
+function updateMetaPanel(m){
+  const mpp=m.mpp_x||0.25;
+  document.getElementById('metaInfo').innerHTML=`
+    <div>File<span class="val">${m.filename.length>18?m.filename.slice(0,16)+'…':m.filename}</span></div>
+    <div>Size<span class="val">${m.file_size_mb} MB</span></div>
+    <div>Driver<span class="val">${m.driver}</span></div>
+    <div>Width<span class="val">${m.width?.toLocaleString()} px</span></div>
+    <div>Height<span class="val">${m.height?.toLocaleString()} px</span></div>
+    <div>Physical<span class="val">${(m.width*mpp/1000).toFixed(1)} × ${(m.height*mpp/1000).toFixed(1)} mm</span></div>
+    <div>MPP<span class="val">${mpp} µm/px</span></div>
+    <div>Pyramid lvls<span class="val">${m.level_count||1}</span></div>
+    ${m.vendor?`<div>Vendor<span class="val">${m.vendor}</span></div>`:''}`;
+}
+
+// ── Format UI toggle ──────────────────────────────────────────────────────────
+function updateFormatUI(){
+  const fmt=document.getElementById('exportFormat').value;
+  document.getElementById('pyramidOpts').style.display=fmt==='pyramid'?'block':'none';
+}
+updateFormatUI();
+
+// ── Export ────────────────────────────────────────────────────────────────────
+let _progressInterval=null;
+
+async function exportROI(){
+  if(!S.sel) return showToast('No selection','error');
+  const pw=document.getElementById('progressWrap');
+  const pf=document.getElementById('progressFill');
+  const pl=document.getElementById('progressLabel');
+  const pp=document.getElementById('progressPct');
+  pw.className='progress-wrap show';
+
+  const body={
+    x:S.sel.x,y:S.sel.y,w:S.sel.w,h:S.sel.h,
+    export_format:document.getElementById('exportFormat').value,
+    out_levels:parseInt(document.getElementById('pyramidLevels').value),
+    tile_size:parseInt(document.getElementById('tileSize').value),
+    compression:document.getElementById('compression').value,
+    jpeg_quality:parseInt(document.getElementById('jpegQuality').value),
+    filename:document.getElementById('filename').value||'roi_export',
+    notes:document.getElementById('notes').value,
+    operator:document.getElementById('operator').value,
+    scale_bar:document.getElementById('scaleBar').checked,
+    mpp_override:parseFloat(document.getElementById('mppOverride').value)||0,
+  };
+
+  // Poll progress from server
+  _progressInterval=setInterval(async()=>{
+    try{
+      const r=await fetch(API+'/progress');
+      const p=await r.json();
+      pf.style.width=p.pct+'%';
+      pl.textContent=p.msg;
+      pp.textContent=p.pct+'%';
+    }catch(e){}
+  },400);
+
+  try{
+    const r=await fetch(API+'/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    clearInterval(_progressInterval);
+    const j=await r.json();
+    if(!r.ok||j.error) throw new Error(j.error);
+    pf.style.width='100%';pl.textContent='Done!';pp.textContent='100%';
+    window.location.href=API+'/download/'+encodeURIComponent(j.filename);
+    setTimeout(()=>{pw.className='progress-wrap';},3000);
+    showToast(`✓ Exported: ${j.filename} (${j.size_mb} MB)`,'success');
+    loadLog();
+  }catch(e){
+    clearInterval(_progressInterval);
+    pw.className='progress-wrap';
+    showToast('Export error: '+e.message,'error');
+  }
+}
+
+async function exportPreview(){
+  if(!S.sel) return showToast('No selection','error');
+  const{x,y,w,h}=S.sel;
+  const a=document.createElement('a');
+  a.href=`${API}/region?x=${x}&y=${y}&w=${w}&h=${h}&level=0&q=92`;
+  a.download=(document.getElementById('filename').value||'roi')+'_preview.jpg';
+  a.click();
+  showToast('Downloading preview…','success');
+}
+
+// ── Export log ────────────────────────────────────────────────────────────────
+async function loadLog(){
+  try{
+    const r=await fetch(API+'/log');
+    const rows=await r.json();
+    const el=document.getElementById('logContainer');
+    if(!rows.length){el.innerHTML='<div class="log-empty">No exports yet.</div>';return;}
+    el.innerHTML=`<table class="log-table">
+      <tr><th>Time</th><th>File</th><th>Size</th><th>Format</th><th>Notes</th></tr>
+      ${rows.slice().reverse().map(r=>`
+      <tr>
+        <td title="${r.timestamp}">${r.timestamp.slice(11,16)}</td>
+        <td title="${r.filename}">${r.filename.slice(0,18)}</td>
+        <td>${r.size_mb} MB</td>
+        <td>${r.format}</td>
+        <td title="${r.notes}">${(r.notes||'').slice(0,20)}</td>
+      </tr>`).join('')}
+    </table>`;
+  }catch(e){console.warn('Log fetch failed');}
+}
+
+// ── Overlay / toast ───────────────────────────────────────────────────────────
+function showOverlay(msg){document.getElementById('loadingMsg').textContent=msg;document.getElementById('loading-overlay').className='show';}
+function hideOverlay(){document.getElementById('loading-overlay').className='';}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show '+type;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',3500);
+}
+</script>
+</body>
+</html>
