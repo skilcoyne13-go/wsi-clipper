@@ -28,7 +28,7 @@ WSI Clipper\
 ```
 
 ## Download
-**[→ Download WSI Clipper v1.0 (Windows)](https://github.com/your-username/wsi-clipper/releases/latest)**
+**[→ Download WSI Clipper v1.0 (Windows)](https://github.com/skilcoyne13-go/wsi-clipper/releases/latest)**
 
 No Python required. Unzip and double-click `WSI_Clipper.exe`.
 
