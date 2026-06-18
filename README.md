@@ -140,11 +140,11 @@ When ready to apply branding:
 ---
 
 ## AI Development Continuation Prompt
-*To continue development in a new AI session, paste the following:*
+*To continue development, paste the following:*
 
 ---
 
-> I am building a standalone WSI (Whole Slide Image) clipping tool called **WSI Clipper v1.0** for free distribution to pathology labs. Users run it via `python server.py` or `run.bat` — no exe required.
+> a standalone WSI (Whole Slide Image) clipping tool called **WSI Clipper v1.0** for free distribution to pathology labs. Users run it via `python server.py` or `run.bat` — no exe required.
 >
 > The tool is built with:
 > - **Python backend** (`server.py`) using Flask, tifffile, zarr, numpy, PIL, and optionally OpenSlide
@@ -162,7 +162,7 @@ When ready to apply branding:
 > - Distribution via Python script + bat files — simpler and more reliable than PyInstaller exe for lab environment
 > - GitHub: https://github.com/skilcoyne13-go/wsi-clipper
 >
-> Please continue development from here. The current files are attached.
+> Continue development from here. The current files are attached.
 
 ---
 
