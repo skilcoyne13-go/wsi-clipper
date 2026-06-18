@@ -13,79 +13,41 @@ A free standalone tool for scanning staff and pathology labs to crop a Whole Sli
 
 ---
 
-## Folder Structure
-```
-WSI Clipper\
-├── server.py            ← Python backend
-├── WSI_Clipper.spec     ← PyInstaller build spec
-├── static\
-│   ├── index.html       ← Frontend UI
-│   └── logo.png         ← Brand logo (add when ready)
-├── dist\
-│   └── WSI_Clipper.exe  ← Packaged executable for distribution
-├── wsi_uploads\         ← Temp folder for uploaded slides
-└── wsi_exports\         ← Exported files saved here
-```
-
 ## Download
 **[→ Download WSI Clipper v1.0 (Windows)](https://github.com/skilcoyne13-go/wsi-clipper/releases/latest)**
 
-No Python required. Unzip and double-click `WSI_Clipper.exe`.
+Unzip and follow the Quick Start steps below.
+
+---
+
+## Requirements
+- Windows 10 or 11
+- [Python 3.10 or newer](https://www.python.org/downloads/) — **check "Add Python to PATH"** during install
 
 ---
 
 ## Quick Start
-1. Double-click `WSI_Clipper.exe`
-2. Drop your WSI file into the tool
-3. Pan and zoom to find the best section
-4. Draw a crop rectangle
-5. Choose export format and click Export
 
----
-```
-cd Desktop\WSI Clipper
-python server.py
-```
-Browser opens automatically at http://localhost:5050
+**First time only:**
+1. Install Python from python.org — check **"Add Python to PATH"**
+2. Unzip the downloaded file
+3. Double-click **`install_and_run.bat`**
+4. Wait for dependencies to install — browser opens automatically
 
----
-
-## Dependencies
-```
-pip install flask flask-cors pillow tifffile numpy imagecodecs zarr openslide-python
-```
-
-### Optional (faster exports)
-```
-pip install pyvips
-```
-Requires libvips binary — download from https://github.com/libvips/libvips/releases
+**Every time after:**
+- Double-click **`run.bat`**
+- Browser opens automatically at http://localhost:5050
 
 ---
 
-## Building the Executable for Distribution
-```
-pyinstaller --onefile --add-data "static;static" --name WSI_Clipper server.py
-```
-Output: `dist\WSI_Clipper.exe`
-
-**What to zip and send to clients:**
-- `dist\WSI_Clipper.exe`
-- `static\` folder (must stay alongside the exe)
-
-Client unzips and double-clicks. No Python needed.
-
-> Note: Windows SmartScreen may warn on first run. Click "More info" → "Run anyway".
-
----
-
-## How It Works
-1. User drops a WSI file into the tool
+## How to Use
+1. Drop your WSI file into the tool
 2. Thumbnail of the full slide loads in the viewer
-3. User zooms and pans to find the best section
-4. User draws a crop rectangle over the target region
-5. Choose export format and click Export
-6. File saves to `wsi_exports\` and downloads automatically
+3. Zoom and pan to find the best kidney section
+4. Draw a crop rectangle over the target region
+5. Add notes and operator name if needed
+6. Choose export format and click **Export Image**
+7. File saves automatically and downloads to your browser
 
 ---
 
@@ -113,49 +75,92 @@ Client unzips and double-clicks. No Python needed.
 
 ---
 
+## Features
+- Pan, zoom, and navigate gigapixel WSI files
+- Minimap navigator showing position on full slide
+- Hi-res tile fetching — sharpens as you zoom in
+- Scale bar burned into exports
+- Notes and operator name embedded in TIFF metadata
+- Export log saved to CSV — tracks every export with timestamp
+- Brightness and contrast adjustment for viewing
+- Keyboard shortcuts: `Space` pan/crop toggle, `C` crop, `+/-` zoom, `F` fit, `Esc` clear
+
+---
+
+## Folder Structure
+```
+WSI Clipper\
+├── server.py              ← Python backend
+├── install_and_run.bat    ← First-time setup and launch
+├── run.bat                ← Launch after first time
+├── requirements.txt       ← Python dependencies
+├── static\
+│   └── index.html         ← Frontend UI
+├── wsi_uploads\           ← Temp folder for uploaded slides
+└── wsi_exports\           ← Exported files saved here
+    └── export_log.csv     ← Auto-generated export history
+```
+
+---
+
 ## Known Behaviour
 - **KFBio TIFFs**: Converted KFBio files have no embedded pyramid. Tool reads full-res via zarr and builds pyramid on export. First zoom-in triggers a one-time PIL decode into RAM.
 - **MPP**: KFBio TIFFs report MPP = 1000 (invalid). Tool ignores values outside 0.05–10.0 µm/px and defaults to 0.25. Override manually in the MPP field if known.
 - **Export size**: No crop size limit. Large ROIs (500+ MP) take longer — JPEG is fastest for very large exports.
 - **Multiple ROIs same slide**: PIL cache clears after each export and reloads on next tile fetch. Brief delay after export is normal.
---
-## v1.0 — Beta
 
+---
+
+## v1.0 — Beta
 This is an initial release. If you encounter issues with a specific scanner format or file, please open a GitHub Issue with details of the error and file format.
+
+---
+
+## For Developers
+To run from source:
+```
+pip install flask flask-cors pillow tifffile numpy imagecodecs zarr openslide-python
+python server.py
+```
+
+To build executable (optional):
+```
+pyinstaller --onedir --add-data "static;static" --name WSI_Clipper server.py
+```
 
 ---
 
 ## Branding
 When ready to apply branding:
-- In `static\index.html` replace `<div class="logo">🔬</div>` with `<img src="logo.png" style="height:32px;width:auto;">`
-- Save your logo as `logo.png` in the `static\` folder
-- Update the `v1.0` badge text with your company name
-- Update `<title>WSI Clipper v1.0</title>` with your product name
-- Rebuild exe with PyInstaller
+- Replace `<div class="logo">🔬</div>` in `static\index.html` with `<img src="logo.png" style="height:32px;width:auto;">`
+- Save logo as `logo.png` in `static\`
+- Update `v1.0` badge and `<title>` tag with your product name
+- Rebuild with PyInstaller if distributing as exe
 
 ---
 
 ## AI Development Continuation Prompt
-*To continue development of this project in a new AI session, paste the following:*
+*To continue development in a new AI session, paste the following:*
 
 ---
 
-> I am building a standalone WSI (Whole Slide Image) clipping tool called **WSI Clipper v1.0** for free distribution to pathology labs. The tool allows scanning staff to open a whole slide image, pan and zoom to find the best section, draw a crop rectangle, and export the selected region for pathologists.
+> I am building a standalone WSI (Whole Slide Image) clipping tool called **WSI Clipper v1.0** for free distribution to pathology labs. Users run it via `python server.py` or `run.bat` — no exe required.
 >
 > The tool is built with:
-> - **Python backend** (`server.py`) using Flask, tifffile, zarr, numpy, PIL, and optionally OpenSlide/pyvips
-> - **Frontend** (`static/index.html`) — single HTML file with three stacked canvases (base thumbnail, hi-res tile, selection overlay), pointer capture for reliable crop selection, and viewport tile fetching that requests hi-res regions from the server 120ms after pan/zoom stops
-> - **Three export formats**: Pyramidal TIFF (QuPath/OMERO), Flat TIFF (Windows Photo Viewer compatible, single-page LZW), JPEG (universal)
+> - **Python backend** (`server.py`) using Flask, tifffile, zarr, numpy, PIL, and optionally OpenSlide
+> - **Frontend** (`static/index.html`) — single HTML file with three stacked canvases (base thumbnail, hi-res tile, selection overlay), pointer capture for reliable crop selection, viewport tile fetching 120ms after pan/zoom stops, minimap navigator, brightness/contrast sliders, export log, notes/operator fields, scale bar option
+> - **Three export formats**: Pyramidal TIFF with OME metadata (QuPath/OMERO), Flat TIFF (Windows Photo Viewer), JPEG (universal)
 >
 > Key solved problems:
-> - KFBio-converted TIFFs: single series, no pyramid, JPEG compressed (compression=7), requires imagecodecs. Metadata reads 84,041 × 44,058 px via series shape, ignores invalid MPP=1000
-> - Zarr for fast partial reads on export; store closed immediately after read to release file handle
-> - PIL image cached in RAM for fast viewport tiles; cache cleared after every export so subsequent ROIs on same slide work
-> - Pointer capture (`setPointerCapture`) fixes crop selection dropping when cursor leaves canvas
-> - Three-canvas architecture: base (thumbnail always visible), tile (hi-res on demand), selection (crop overlay)
+> - KFBio-converted TIFFs: single series, no pyramid, JPEG compressed, requires imagecodecs. Metadata reads correct dimensions via series shape, ignores invalid MPP=1000
+> - Zarr for fast partial reads on export; store closed immediately after read
+> - PIL image cached in RAM for fast viewport tiles; cache cleared after every export
+> - Pointer capture fixes crop selection dropping when cursor leaves canvas
+> - Three-canvas architecture: base (thumbnail), tile (hi-res on demand), selection (crop overlay)
 > - Windows Photo Viewer cannot open large pyramidal TIFFs — Flat TIFF export solves this
-> - PyInstaller: `--onefile --add-data "static;static"` — exe + static\ folder distributed together
-> - No branding applied yet — placeholder 🔬 logo and v1.0 badge, ready for new brand when decided
+> - MemoryError on large slides fixed by capping tile fetch coverage at 50% and max 2048px
+> - Distribution via Python script + bat files — simpler and more reliable than PyInstaller exe for lab environment
+> - GitHub: https://github.com/skilcoyne13-go/wsi-clipper
 >
 > Please continue development from here. The current files are attached.
 
