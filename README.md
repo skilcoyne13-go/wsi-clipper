@@ -177,7 +177,7 @@ If this tool saves your lab time, consider reaching out about consulting service
 ## Author
 **Scott Kilcoyne**
 Computational Pathology Consultant
-[LinkedIn](https://www.linkedin.com/in/your-profile)
+[LinkedIn](https://www.linkedin.com/in/your-profile))
 
 ---
 
