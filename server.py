@@ -14,10 +14,12 @@ from PIL import Image, ImageDraw, ImageFont
 Image.MAX_IMAGE_PIXELS = None
 
 try:
+    import ctypes
     import openslide
     HAS_OPENSLIDE = True
-except ImportError:
+except Exception:
     HAS_OPENSLIDE = False
+    openslide = None
 
 try:
     import tifffile
@@ -459,7 +461,8 @@ def api_export():
             region.save(str(out_path),"TIFF",
                         compression="tiff_lzw",
                         resolution=(res_ppcm,res_ppcm),
-                        resolutionunit=3)
+                        resolutionunit=3,
+                        software="WSI Clipper v1.0")
             set_progress(90,"Finalising...")
 
         else:
@@ -474,6 +477,7 @@ def api_export():
                 '<?xml version="1.0" encoding="UTF-8"?>'
                 '<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06">'
                 '<Image ID="Image:0" Name="' + fname_safe + '">'
+                '<Description>Exported by WSI Clipper v1.0 | Built by Scott Kilcoyne | https://github.com/skilcoyne13-go/wsi-clipper</Description>'
                 '<Pixels ID="Pixels:0" Type="uint8"'
                 ' SizeX="' + str(w) + '" SizeY="' + str(h) + '"'
                 ' SizeZ="1" SizeC="3" SizeT="1"'
@@ -504,6 +508,7 @@ def api_export():
                         resolutionunit=tifffile.RESUNIT.CENTIMETER,
                         resolution=(res_ppcm/factor,res_ppcm/factor),
                         subfiletype=1 if lv>0 else 0,
+                        software="WSI Clipper v1.0",
                     )
                     if tf_comp:
                         opts["compression"] = tf_comp
