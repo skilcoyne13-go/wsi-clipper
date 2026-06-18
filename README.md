@@ -119,7 +119,7 @@ Client unzips and double-clicks. No Python needed.
 - **Export size**: No crop size limit. Large ROIs (500+ MP) take longer — JPEG is fastest for very large exports.
 - **Multiple ROIs same slide**: PIL cache clears after each export and reloads on next tile fetch. Brief delay after export is normal.
 --
-v1.0 — Beta
+## v1.0 — Beta
 
 This is an initial release. If you encounter issues with a specific scanner format or file, please open a GitHub Issue with details of the error and file format.
 
@@ -177,7 +177,7 @@ If this tool saves your lab time, consider reaching out about consulting service
 ## Author
 **Scott Kilcoyne**
 Computational Pathology Consultant
-[LinkedIn](https://www.linkedin.com/in/your-profile))
+[LinkedIn](https://www.linkedin.com/in/scott-kilcoyne-pathology/)
 
 ---
 
