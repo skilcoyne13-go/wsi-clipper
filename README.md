@@ -43,7 +43,7 @@ Unzip and follow the Quick Start steps below.
 ## How to Use
 1. Drop your WSI file into the tool
 2. Thumbnail of the full slide loads in the viewer
-3. Zoom and pan to find the best kidney section
+3. Zoom and pan to find the best section
 4. Draw a crop rectangle over the target region
 5. Add notes and operator name if needed
 6. Choose export format and click **Export Image**
