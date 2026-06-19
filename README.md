@@ -175,13 +175,13 @@ Copyright (c) 2026 Scott Kilcoyne
 
 ## Contributing
 Bug reports and pull requests welcome via GitHub Issues.
-If this tool saves your lab time, consider reaching out about consulting services.
+If this tool saves your lab time, consider reaching out and telling me any other workflow related problems you are experiencing.
 
 ---
 
 ## Author
 **Scott Kilcoyne**
-Computational Pathology Consultant
+Computational Pathology Consultant, Cofounder - DigitCells
 [LinkedIn](https://www.linkedin.com/in/scott-kilcoyne-pathology/)
 
 ---
